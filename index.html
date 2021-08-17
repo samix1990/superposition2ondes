@@ -1,0 +1,265 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <title>Croisement de deux ondes</title>
+    <link href="commun/style.css" rel="stylesheet">
+</head>
+
+<body>
+    <div id="general">
+        <header>Croisement de deux ondes</header>
+        <main>
+            <canvas id="canvas" width="1500" height="500"> </canvas>
+            <div id="choix">
+                <div id="rb_g">
+                    <div id="rb_g1" class="rb" style="color: #c00"><span>☑</span> Impulsion vers le haut</div>
+                    <div id="rb_g2" class="rb"><span>☐</span> Pas d'impulsion</div>
+                    <div id="rb_g3" class="rb"><span>☐</span> Impulsion vers le bas</div>
+                </div>
+                <img id="imgPause" src="commun/pause.gif" />
+                <div id="rb_d">
+                    <div id="rb_d1" class="rb"><span>☐</span> Impulsion vers le haut</div>
+                    <div id="rb_d2" class="rb" style="color: #0c0"><span>☑</span> Pas d'impulsion</div>
+                    <div id="rb_d3" class="rb"><span>☐</span> Impulsion vers le bas</div>
+                </div>
+            </div>
+            <div id="boutons"><button id="btnDeb">Remise a ziro</button>   <button id="btnAr">↶</button> <button id="btnLectPause">Demarrer</button> <button id="btnAv">↷</button></div>
+        </main>
+        
+    </div>
+    <script language="javascript">
+        //---------------------------------------------------
+        //          Gestion de l'affichage de l'ecran
+        //---------------------------------------------------
+        var h;
+
+        function actualiseTailleFenetre() {
+            if (window.innerWidth / window.innerHeight > 3 / 2) {
+                h = window.innerHeight;
+                document.documentElement.style.setProperty('--h', h + 'px')
+            } else {
+                h = window.innerWidth * 2 / 3;
+                document.documentElement.style.setProperty('--h', h + 'px')
+            }
+        }
+        window.addEventListener('resize', actualiseTailleFenetre);
+        actualiseTailleFenetre();
+
+
+        //---------------------------------------------------
+        //                        Animation
+        //---------------------------------------------------
+
+        var rb_g = 1;
+        var rb_d = 0;
+
+        const ctx = document.querySelector('#canvas').getContext('2d');
+        const nbPoints = 99;
+        var posGene;
+        var testLecture;
+
+        var grad_g = ctx.createLinearGradient(50, 0, 70, 0);
+        grad_g.addColorStop(0, '#600');
+        grad_g.addColorStop(0.3, '#900');
+        grad_g.addColorStop(1, '#300');
+
+        var grad_d = ctx.createLinearGradient(1430, 0, 1450, 0);
+        grad_d.addColorStop(0, '#060');
+        grad_d.addColorStop(0.3, '#090');
+        grad_d.addColorStop(1, '#030');
+
+
+        function f(x) {
+            return 110 * Math.exp(-(x - nbPoints - 15) * (x - nbPoints - 15) / 10);
+        }
+
+
+        function dessine() {
+            ctx.clearRect(0, 0, 1500, 500);
+            //Fond
+            ctx.fillStyle = grad_g;
+            ctx.fillRect(50, 100, 20, 400);
+            ctx.fillStyle = grad_d;
+            ctx.fillRect(1430, 100, 20, 400);
+
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = "gray"
+            ctx.beginPath();
+            ctx.moveTo(71, 240);
+            ctx.lineTo(1429, 240);
+            ctx.stroke();
+
+            //Source gauche
+            var valG = f(posGene) * rb_g;
+            var valD = f(posGene + nbPoints) * rb_d;
+
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = "#600"
+            ctx.beginPath();
+            ctx.moveTo(70, 240 - (valG + valD));
+            ctx.lineTo(70 + 13.6, 240 - (valG + valD));
+            ctx.stroke();
+
+            ctx.fillStyle = '#900';
+            ctx.beginPath();
+            ctx.arc(70 + 13.6, 240 - (valG + valD), 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            //Source droite
+            var valG = f(posGene + nbPoints - 1) * rb_g;
+            var valD = f(posGene + 1) * rb_d;
+
+            ctx.strokeStyle = "#060"
+            ctx.beginPath();
+            ctx.moveTo(1430 - 13.6, 240 - (valG + valD));
+            ctx.lineTo(1430, 240 - (valG + valD));
+            ctx.stroke();
+
+            ctx.fillStyle = '#090';
+            ctx.beginPath();
+            ctx.arc(1430 - 13.6, 240 - (valG + valD), 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            //Points
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            for (var i = 1; i < nbPoints - 1; i++) {
+                ctx.beginPath();
+                valG = f(posGene + i) * rb_g;
+                valD = f(posGene + nbPoints - i) * rb_d;
+                ctx.arc(70 + i * 13.6 + 13.6, 240 - (valG + valD), 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+        }
+
+        function avance() {
+            posGene -= 0.3;
+            dessine();
+            if (posGene > 0) {
+                if (testLecture) {
+                    window.requestAnimationFrame(avance)
+                }
+            } else {
+                initialise();
+            }
+        }
+
+        function initialise() {
+            testLecture = false;
+            document.querySelector('#imgPause').style.visibility = 'hidden';
+            document.querySelector('#btnLectPause').innerHTML = "Démarrer"
+            document.querySelector('#btnAr').disabled = true;
+            document.querySelector('#btnAv').disabled = true;
+            posGene = nbPoints + 30;
+            dessine();
+        }
+
+        initialise();
+
+
+        //---------------------------------------------------
+        //                     Boutons
+        //---------------------------------------------------
+
+        //Radio-boutons        
+        function decoche_g() {
+            document.querySelector('#rb_g1').firstChild.innerHTML = '☐';
+            document.querySelector('#rb_g2').firstChild.innerHTML = '☐';
+            document.querySelector('#rb_g3').firstChild.innerHTML = '☐';
+            document.querySelector('#rb_g1').style.color = '#600';
+            document.querySelector('#rb_g2').style.color = '#600';
+            document.querySelector('#rb_g3').style.color = '#600';
+        }
+
+        document.querySelector('#rb_g1').addEventListener('click', function() {
+            decoche_g();
+            this.firstChild.innerHTML = '☑';
+            this.style.color = '#c00';
+            rb_g = 1;
+            initialise();
+        });
+        document.querySelector('#rb_g2').addEventListener('click', function() {
+            decoche_g();
+            this.firstChild.innerHTML = '☑';
+            this.style.color = '#c00';
+            rb_g = 0;
+            initialise();
+        });
+        document.querySelector('#rb_g3').addEventListener('click', function() {
+            decoche_g();
+            this.firstChild.innerHTML = '☑';
+            this.style.color = '#c00';
+            rb_g = -1;
+            initialise();
+        });
+
+        function decoche_d() {
+            document.querySelector('#rb_d1').firstChild.innerHTML = '☐';
+            document.querySelector('#rb_d2').firstChild.innerHTML = '☐';
+            document.querySelector('#rb_d3').firstChild.innerHTML = '☐';
+            document.querySelector('#rb_d1').style.color = '#060';
+            document.querySelector('#rb_d2').style.color = '#060';
+            document.querySelector('#rb_d3').style.color = '#060';
+        }
+
+        document.querySelector('#rb_d1').addEventListener('click', function() {
+            decoche_d();
+            this.firstChild.innerHTML = '☑';
+            this.style.color = '#0c0'
+            rb_d = 1;
+            initialise();
+        });
+        document.querySelector('#rb_d2').addEventListener('click', function() {
+            decoche_d();
+            this.firstChild.innerHTML = '☑';
+            this.style.color = '#0c0'
+            rb_d = 0;
+            initialise();
+        });
+        document.querySelector('#rb_d3').addEventListener('click', function() {
+            decoche_d();
+            this.firstChild.innerHTML = '☑';
+            this.style.color = '#0c0'
+            rb_d = -1;
+            initialise();
+        });
+
+        //Boutons de panneau de controle
+
+        document.querySelector('#btnLectPause').addEventListener('click', () => {
+            if (testLecture) {
+                testLecture = false;
+                document.querySelector('#imgPause').style.visibility = 'visible';
+                document.querySelector('#btnLectPause').innerHTML = "Reprise"
+                document.querySelector('#btnAr').disabled = false;
+                document.querySelector('#btnAv').disabled = false;
+            } else {
+                testLecture = true;
+                document.querySelector('#imgPause').style.visibility = 'hidden';
+                document.querySelector('#btnLectPause').innerHTML = "Pause";
+                document.querySelector('#btnAr').disabled = true;
+                document.querySelector('#btnAv').disabled = true;
+                window.requestAnimationFrame(avance);
+            }
+        });
+
+        document.querySelector('#btnAv').addEventListener('click', () => {
+            posGene -= 0.4;
+            dessine();
+        });
+        document.querySelector('#btnAr').addEventListener('click', () => {
+            posGene += 0.4;
+            dessine();
+        });
+
+        document.querySelector('#btnDeb').addEventListener('click', () => {
+            initialise();
+        });
+    </script>
+</body>
+
+</html>
